@@ -1,0 +1,578 @@
+{% assign sca_product = product %}{% assign sca_product_id_text = "," | append : sca_product.id | append : "," %}{% assign sca_price = sca_product.price %}{% assign sca_price_min = sca_product.price_min %}{% assign sca_price_max = sca_product.price_max %}{% assign sca_compare_at_price = sca_product.compare_at_price %}{% assign sca_compare_at_price_min = sca_product.compare_at_price_min %}{% assign sca_compare_at_price_max = sca_product.compare_at_price_max %}{% assign sca_product_available = sca_product.available %}{% assign sca_product_variantCount = sca_product.variants.size %}{% assign sca_compare_at_price_varies = sca_product.compare_at_price_varies %}{% assign sca_price_varies = sca_product.price_varies %}{% assign sca_has_only_default_variant = false %}{% capture sca_product_variants_json %}{{sca_product.variants | json }}{% endcapture %} {% capture sca_product_json %}{ {% if sca_all_gift_products_ids == null or sca_all_gift_products_ids contains sca_product_id_text %}{% assign sca_product_available = false %}{% assign sca_product_variantCount = 0 %}{% assign sca_has_only_default_variant = true %}{% assign sca_is_first_variant = true %}{% capture sca_variants_json %} [{% for variant in sca_product.variants %}{% unless variant.metafields.secomapp.freegifts %}{% unless variant.title contains '(Freegifts)' %}{% unless variant.title contains '% Off' %}{% unless variant.metafields.shappify_qb.qb_hide == "1" %}{% unless variant.metafields.shappify_bundle.is_bundle == "true" %}{% unless variant.metafields.brodev_scn.hide == "true" %}{% unless variant.metafields.wholesaler2.wholesale %}{% unless variant.metafields.Wholesaler.level %}{% unless variant.title contains '(Wholesale' %}{% if sca_is_first_variant%} {{ variant | json }}{% assign sca_price = variant.price %} {% assign sca_price_min = variant.price %} {% assign sca_price_max = variant.price %} {% assign sca_compare_at_price = variant.compare_at_price %} {% assign sca_compare_at_price_min = variant.compare_at_price %} {% assign sca_compare_at_price_max = variant.compare_at_price %} {% assign sca_product_available = variant.available %} {% assign sca_product_variantCount = 1 %} {% assign sca_is_first_variant = false%}{% else %},{{variant | json }} {% if sca_price_min >= variant.price %} {% assign sca_price_min = variant.price %} {% assign sca_price = variant.price %}{% endif %} {% if sca_price_max <= variant.price %} {% assign sca_price_max = variant.price %} {% endif %} {% if variant.compare_at_price %} {% if sca_compare_at_price_min==null or sca_compare_at_price_min >= variant.compare_at_price %} {% assign sca_compare_at_price_min = variant.compare_at_price %} {% assign sca_compare_at_price = variant.compare_at_price %} {% endif %} {% if sca_compare_at_price_max==null or sca_compare_at_price_max < variant.compare_at_price %} {% assign sca_compare_at_price_max = variant.compare_at_price %} {% endif %} {% endif %} {% if variant.available == true %} {% assign sca_product_available = true %} {% endif %} {% assign sca_product_variantCount = sca_product_variantCount | plus: 1 %}{% endif %}{% endunless %}{% endunless %}{% endunless %}{% endunless %}{% endunless %}{% endunless %}{% endunless %}{% endunless %}{% endunless %}{%endfor%} ]{% endcapture %}{% if sca_price_min < sca_price_max %}{% assign sca_price_varies = true %}{% else %}{% assign sca_price_varies = false %}{% endif %}{% if sca_compare_at_price_min < sca_compare_at_price_max %}{% assign sca_compare_at_price_varies = true %}{% else %}{% assign sca_compare_at_price_varies = false %}{% endif %}{% if sca_product_variantCount > 1 %}{% assign sca_has_only_default_variant = false %}{% endif %}{% if sca_product_variantCount == sca_product.variants.size %} "variants":{{ sca_product.variants }},{% else %}{%assign sca_product_variants_json = sca_variants_json %} "variants":{{ sca_variants_json }},{% endif %}{% else %} "variants":{{ sca_product_variants_json }},{% endif %} "id": {{sca_product.id}}, "title": {{sca_product.title | json}}, "handle": {{sca_product.handle | json}}, "description": {{sca_product.description | json}}, "published_at": "{{sca_product.published_at | date: "%Y-%m-%dT%H-%M-%S%:z" }}", "created_at": "{{sca_product.created_at | date: "%Y-%m-%dT%H-%M-%S%:z" }}", "vendor": {{sca_product.vendor | json}}, "type": {{sca_product.type | json}}, "tags": {{sca_product.tags | json}}, "price": {{sca_price}}, "price_min": {{sca_price_min}}, "price_max": {{sca_price_max}}, "available": {{sca_product.available}}, "price_varies": {{sca_price_varies}}, "compare_at_price": {{sca_compare_at_price}}, "compare_at_price_min": {{sca_compare_at_price_min}}, "compare_at_price_max": {{sca_compare_at_price_max}}, "compare_at_price_varies": {{sca_compare_at_price_varies}}, "images": {{sca_product.images | json}}, "featured_image": {{sca_product.featured_image | json }}, "options": {{sca_product.options | json}}, "media": {{sca_product.media | json }}, "content": {{sca_product.content | json }}} {% endcapture sca_product_json %}
+
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+
+  unless thumbnail_position
+    assign thumbnail_position = 'beside'
+  endunless
+
+  unless description_style
+    assign description_style = 'full'
+  endunless
+
+  assign product_zoom_size = '1800x1800'
+  assign product_image_size = '620x'
+
+  case image_container_width
+    when 'small'
+      assign product_image_width = 'medium-up--two-fifths'
+      assign product_description_width = 'medium-up--three-fifths'
+      assign product_image_size = '480x'
+    when 'medium'
+      assign product_image_width = 'medium-up--one-half'
+      assign product_description_width = 'medium-up--one-half'
+      assign product_image_size = '620x'
+    when 'large'
+      assign product_image_width = 'medium-up--three-fifths'
+      assign product_description_width = 'medium-up--two-fifths'
+      assign product_image_size = '740x'
+  endcase
+
+  assign product_img_structure = product.featured_media | img_url: '1x1' | replace: '_1x1.', '_{width}x.'
+-%}
+
+{% if current_variant.metafields.secomapp.freegifts %}
+  {% assign current_variant = product.variants[0] %}
+{% endif %}
+
+<div id="ProductSection-{{ section_id }}"
+  class="product-section"
+  data-section-id="{{ section_id }}"
+  data-section-type="product"
+  data-product-handle="{{ product.handle }}"
+  data-product-title="{{ product.title | escape }}"
+  data-product-url="{{ product.url | within: collection }}"
+  data-aspect-ratio="{{ 100 | divided_by: product.featured_media.aspect_ratio }}"
+  data-img-url="{{ product_img_structure }}"
+  {% if settings.product_zoom_enable %}
+    data-image-zoom="true"
+  {% endif %}
+  {% if settings.inventory_enable %}
+    data-inventory="true"
+  {% endif %}
+  {% if settings.inventory_transfers_enable %}
+    data-incoming-inventory="true"
+  {% endif %}
+  {% unless isModal %}
+    data-history="true"
+  {% endunless %}
+  data-modal="{{ isModal }}">
+
+  {%- render 'product-template-variables', product: product, current_variant: current_variant -%}
+
+  <div class="page-content page-content--product">
+    <div class="page-width">
+
+      <div class="grid{% unless image_position == 'left' %} grid--product-images-right{% endunless %}{% if mobile_layout == 'partial' %} grid--product-images--partial{% endif %}">
+        {%- if image_position == 'left' -%}
+          <div class="grid__item {{ product_image_width }} product-single__sticky">
+            {%- render 'product-images',
+              section_id: section_id,
+              product: product,
+              isModal: isModal,
+              image_position: image_position,
+              product_zoom_size: product_zoom_size,
+              product_image_size: product_image_size,
+              thumbnail_arrows: thumbnail_arrows,
+              thumbnail_position: thumbnail_position,
+              video_looping: video_looping,
+              video_style: video_style
+            -%}
+          </div>
+        {%- endif -%}
+
+        <div class="grid__item {{ product_description_width }}">
+
+          <div class="product-single__meta">
+            {%- if settings.show_breadcrumbs and isModal != true -%}
+              {%- render 'breadcrumbs' -%}
+            {%- endif -%}
+
+            {%- if settings.vendor_enable -%}
+              <div class="product-single__vendor">
+                {%- assign vendor_handle = product.vendor | handleize -%}
+                {%- if collections[vendor_handle] != empty -%}
+                  <a href="{{ routes.collections_url }}/{{ collections[vendor_handle].handle }}">
+                    {{ collections[vendor_handle].title }}
+                  </a>
+                {%- else -%}
+                  {{ product.vendor | link_to_vendor }}
+                {%- endif -%}
+              </div>
+            {%- endif -%}
+
+            <div style="position:relative;">
+              {%- if isModal -%}
+                <p class="h2 product-single__title">
+                  {{ product.title }}
+                </p>
+              {%- else -%}
+                <h1 class="h2 product-single__title">
+                  {{ product.title }}
+                </h1>
+              {%- endif -%}
+            <div name="secomapp-fg-image-{{ product.id }}" style="display: none;">{{ "icon-freegift.png" | asset_url | img_tag: "FG icon", "sca-fg-img-collect" }}</div></div>
+
+            {% render 'judgeme_widgets', widget_type: 'judgeme_preview_badge', jm_style: '', concierge_install: true, product: product %}
+            {%- if settings.enable_product_reviews and settings.reviews_layout == 'full' -%}
+              {%- liquid
+                if isModal
+                  assign review_link = product.url | within: collection | append: '#Reviews-' | append: product.id
+                else
+                  assign review_link = '#Reviews-' | append: product.id
+                endif
+              -%}
+              <a href="{{ review_link }}" class="product-single__review-link">
+                <span class="shopify-product-reviews-badge" data-id="{{ product.id }}"></span>
+              </a>
+            {%- endif -%}
+
+            {%- if settings.sku_enable -%}
+              <p id="Sku-{{ section_id }}" class="product-single__sku">
+                {%- if current_variant.sku -%}
+                  {{ current_variant.sku }}
+                {%- endif -%}
+              </p>
+            {%- endif -%}
+
+            {%- assign hide_sale_price = true -%}
+            {%- if sca_compare_at_price_max > sca_price -%}
+              {%- if current_variant.compare_at_price > current_variant.price -%}
+                {%- assign hide_sale_price = false -%}
+              {%- endif -%}
+              <span
+                id="PriceA11y-{{ section_id }}"
+                class="visually-hidden"
+                aria-hidden="{{ hide_sale_price }}">
+                  {{ 'products.general.regular_price' | t }}
+              </span>
+              <span class="product__price-wrap-{{ section_id }}{% if hide_sale_price %} hide{% endif %}">
+                <span id="ComparePrice-{{ section_id }}" class="product__price product__price--compare">
+                  {%- if current_variant.compare_at_price > current_variant.price -%}
+                    {{ current_variant.compare_at_price | money }}
+                  {%- endif -%}
+                </span>
+              </span>
+              <span id="ComparePriceA11y-{{ section_id }}" class="visually-hidden">{{ 'products.general.sale_price' | t }}</span>
+            {%- else -%}
+              <span id="PriceA11y-{{ section_id }}" class="visually-hidden">{{ 'products.general.regular_price' | t }}</span>
+            {%- endif -%}
+
+            <span id="ProductPrice-{{ section_id }}"
+              class="product__price{% if current_variant.compare_at_price > current_variant.price %} on-sale{% endif %}">
+              {{ current_variant.price | money }}
+            </span>
+
+            {%- if settings.product_save_amount -%}
+              {%- if settings.product_save_type == 'dollar' -%}
+                {%- capture saved_amount -%}{{ current_variant.compare_at_price | minus: current_variant.price | money }}{%- endcapture -%}
+              {%- else -%}
+                {%- capture saved_amount -%}{{ current_variant.compare_at_price | minus: current_variant.price | times: 100.0 | divided_by: current_variant.compare_at_price | round }}%{%- endcapture -%}
+              {%- endif -%}
+              <span id="SavePrice-{{ section_id }}" class="product__price-savings{% if hide_sale_price %} hide{% endif %}">
+                {%- unless hide_sale_price -%}
+                  {{ 'products.general.save_html' | t: saved_amount: saved_amount }}
+                {%- endunless -%}
+              </span>
+            {%- endif -%}
+
+            <div class="product__unit-price product__unit-price--spacing product__unit-price-wrapper--{{ section_id }}{% unless current_variant.unit_price_measurement %} hide{% endunless %}">
+              {%- capture unit_price_base_unit -%}
+                <span class="product__unit-base--{{ section_id }}">
+                  {%- if current_variant.unit_price_measurement -%}
+                    {%- if current_variant.unit_price_measurement.reference_value != 1 -%}
+                      {{ current_variant.unit_price_measurement.reference_value }}
+                    {%- endif -%}
+                    {{ current_variant.unit_price_measurement.reference_unit }}
+                  {%- endif -%}
+                </span>
+              {%- endcapture -%}
+
+              <span class="product__unit-price--{{ section_id }}">{{ current_variant.unit_price | money }}</span>/{{ unit_price_base_unit }}
+            </div>
+
+            {%- if shop.taxes_included or shop.shipping_policy.body != blank -%}
+              <div class="product__policies rte small--text-center">
+                <small>
+                  {%- if shop.taxes_included -%}
+                    {{ 'products.product.include_taxes' | t }}
+                  {%- endif -%}
+                  {%- if shop.shipping_policy.body != blank -%}
+                    {{ 'products.product.shipping_policy_html' | t: link: shop.shipping_policy.url }}
+                  {%- endif -%}
+                </small>
+              </div>
+            {%- endif -%}
+
+            {%- if settings.inventory_enable or settings.inventory_transfers_enable -%}
+              {%- assign variants_with_inventory_tracking = product.variants | where: 'inventory_management', 'shopify' -%}
+              <script>
+                window.inventories = window.inventories || {};
+                window.inventories['{{ section_id }}'] = {};
+                {% for variant in variants_with_inventory_tracking %}
+                  window.inventories['{{ section_id }}'][{{ variant.id }}] = {
+                    'quantity': {{ variant.inventory_quantity | default: 0 }},
+                    'policy': {{ variant.inventory_policy | json }},
+                    'incoming': '{{ variant.incoming | default: false }}',
+                    'next_incoming_date': {{ variant.next_incoming_date | date: format: 'date' | json }}
+                  };
+                {% endfor %}
+              </script>
+
+              {% comment %}
+                If loaded in quick view, it might be from a JS-loaded function
+                that loads recommended products. If that's the case, the above
+                JS will not set the variant inventory. Add it to an accessible
+                data div to read later instead.
+              {% endcomment %}
+              {%- if isModal -%}
+                <div
+                  data-section-id="{{ section_id }}"
+                  class="hide js-product-inventory-data"
+                  aria-hidden="true"
+                  >
+                  {%- for variant in variants_with_inventory_tracking -%}
+                    <div
+                      class="js-variant-inventory-data"
+                      data-id="{{ variant.id }}"
+                      data-quantity="{{ variant.inventory_quantity | default: 0 }}"
+                      data-incoming="{{ variant.incoming | default: false | json }}"
+                      data-date="{{ variant.next_incoming_date | date: format: 'date' }}">
+                    </div>
+                  {%- endfor -%}
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+
+            <hr class="hr--medium">
+
+            {%- unless isModal -%}
+              {% comment %}
+                Shopify's product form attaches a number of tracking
+                scripts that cause slower load times and false statistics.
+                Quick view modals request these on-demand.
+              {% endcomment %}
+              {%- render 'product-form',
+                section_id: section_id,
+                product: product,
+                current_variant: current_variant
+              -%}
+            {%- else -%}
+              <div
+                id="ProductFormHolder-{{ section_id }}"
+                class="product-form-holder"
+                data-url="{{ product.url }}"
+                data-template="{{ product.template_suffix }}">
+                  {%- if product.options.size > 0 -%}
+                    {%- for i in (1..product.options.size) -%}
+                      <div class="placeholder-content" style="min-height: 86px; max-width: 66%;"></div>
+                    {%- endfor -%}
+                  {%- endif -%}
+                  <div class="placeholder-content" style="min-height: 86px;"></div>
+                </div>
+            {%- endunless -%}
+
+            {%- unless isModal -%}
+              {%- if settings.surface_pickup_enable -%}
+                <div id="StoreAvailabilityHolder-{{ section_id }}"
+                  data-product-name="{{ product.title | escape }}"
+                  data-base-url="{{ shop.url }}{{ routes.root_url }}"
+                  ></div>
+              {%- endif -%}
+            {%- endunless -%}
+
+            {%- if settings.trust_image != blank -%}
+              <div class="aos-animate trust-image" style="max-width: {{ settings.trust_image.width }}px;">
+                <div class="image-wrap " style="height: 0; padding-bottom: {{ 100 | divided_by: settings.trust_image.aspect_ratio }}%;">
+                  {%- assign img_url = settings.trust_image | img_url: '1x1' | replace: '_1x1.', '_{width}x.' -%}
+                  <img class="lazyload"
+                      data-src="{{ img_url }}"
+                      data-widths="[360, 540, 700, 1024]"
+                      data-aspectratio="{{ settings.trust_image.aspect_ratio }}"
+                      data-sizes="auto"
+                      alt="{{ settings.trust_image.alt }}">
+                  <noscript>
+                    <img class="lazyloaded" src="{{ settings.trust_image | img_url: '540x' }}" alt="{{ settings.trust_image.alt }}">
+                  </noscript>
+                </div>
+              </div>
+            {%- endif -%}
+
+<!--      <div class="pincode-gift-wrapper flexbox">
+          <div class="verify-pincode">
+            <p>
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.3335 2.125H0.708496V11.3333H11.3335V2.125Z" stroke="#1A468D" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.3335 5.66675H14.1668L16.2918 7.79175V11.3334H11.3335V5.66675Z" stroke="#1A468D" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.89583 14.8749C4.87384 14.8749 5.66667 14.0821 5.66667 13.1041C5.66667 12.1261 4.87384 11.3333 3.89583 11.3333C2.91783 11.3333 2.125 12.1261 2.125 13.1041C2.125 14.0821 2.91783 14.8749 3.89583 14.8749Z" stroke="#1A468D" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.1043 14.8749C14.0823 14.8749 14.8752 14.0821 14.8752 13.1041C14.8752 12.1261 14.0823 11.3333 13.1043 11.3333C12.1263 11.3333 11.3335 12.1261 11.3335 13.1041C11.3335 14.0821 12.1263 14.8749 13.1043 14.8749Z" stroke="#1A468D" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Verify pincode for delivery details
+            </p>
+            <div class="check-availability pincode-checker flexbox">
+              <div class="input-group">
+                <input type="number" name="pincode" id="pincodeInput" placeholder="Enter pincode" />
+                <button type="button" class="btn pincode-bar__submit">
+                  <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 12H19.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 5L19.5 12L12.5 19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <p class="pincode-error input-group">
+
+              </p>
+              <ul class="pincode-infomation">
+                <li class="shipping-info cod-info">COD available</li>
+                <li class="shipping-info">Delivery by <label class="day">Saturday</label>, <label class="date">October 03</label></li>
+              </ul>
+            </div>
+          </div>
+          
+        </div> -->
+            
+            
+   {% if product != blank and product.description != blank %}
+        <div class="product-description rte">
+           {{ product.description | split:"<h6>" | first }}
+        </div>
+      <div class="accordion">
+  {% assign productTab = product.description | split:"<h6>" %}
+  {%- for tab in productTab -%}
+  {%- if tab contains '</h6>' -%}
+  {% assign newData = tab | split:"</h6>" %}
+  <div class="acc-block">
+    <div class="acc-title">
+      <h6>{{ newData[0] }}</h6>
+      <span></span>
+    </div>
+    <div class="acc-description">
+      {{ newData[1] }}
+     
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+       {%- endif -%}
+<!--               {%- render 'product-additional-content', product: product, section_id: section_id -%} -->
+        
+
+            {%- if social -%}
+              {%- render 'social-sharing', share_title: product.title, share_permalink: product.url, share_image: product -%}
+
+            {%- endif -%}
+          </div>
+        </div>
+
+        {%- unless image_position == 'left' -%}
+          <div class="grid__item {{ product_image_width }} product-single__sticky">
+            {%- render 'product-images',
+              section_id: section_id,
+              product: product,
+              isModal: isModal,
+              image_position: image_position,
+              product_zoom_size: product_zoom_size,
+              product_image_size: product_image_size,
+              thumbnail_arrows: thumbnail_arrows,
+              thumbnail_position: thumbnail_position,
+              video_looping: video_looping,
+              video_style: video_style
+            -%}
+          </div>
+        {%- endunless -%}
+      </div>
+
+      {%- if description_style == 'full' -%}
+        <div class="product-single__description-full rte">
+          {{ product.description }}
+        </div>
+
+        {%- render 'product-additional-content', product: product, section_id: section_id -%}
+      {%- endif -%}
+          {% render 'judgeme_widgets', widget_type: 'judgeme_review_widget', concierge_install: true, product: product %}
+
+    </div>
+  </div>
+</div>
+
+
+<script>
+  
+//Accordion script
+  $(".accordion .acc-title").on("click", function() { 
+    $(this).parent(".acc-block").toggleClass("active").siblings().removeClass("active");
+    $(this).parent(".acc-block").siblings().children(".acc-description").slideUp();
+    $(this).siblings(".acc-description").slideToggle();
+  });
+  
+  
+ function pincodeChecker(){
+      /*====================Retrieving Sheet Data=====================*/
+      var sheetData = undefined;
+      var isPincodeCheckerVisible = $('.check-availability');
+      if(isPincodeCheckerVisible.length){
+        $.ajax({
+          url: "https://sheets.googleapis.com/v4/spreadsheets/1lnCEetDMgjP1wr0FVsD56Qv2a6VX-PIvEjR2gsNYG8k/values/Sheet1?key=AIzaSyCy_Ls-IEQ6wMXnHzzBnWu6AdqpuVSh0xs",
+          dataType: "json",
+          async:false,
+          success: function(data){
+            sheetData = data.values;
+            $('body').trigger('sheet_ready');        
+          },
+          error: function(XMLHttpRequest, textStatus) {
+            console.log(textStatus);
+          }
+        });
+      }
+
+  } 
+      /*==================Product page pincode validation================*/   
+  
+	
+function addDays(dateObj, numDays) {
+   dateObj.setDate(dateObj.getDate() + numDays);
+   return dateObj;
+}
+ 
+
+       
+      var $input = $('.pincode-checker #pincodeInput');
+      var $submitBtn = $('.pincode-checker .pincode-bar__submit');
+      var $inputValue, 
+          $days, 
+          $date,
+          $fromDate,
+          $toDate,
+          $sellFromDate,
+          $sellToDate,
+          $deliverDate, 
+          $addDays,
+          $currentTime;
+
+      //Allow only number
+      $input.keydown(function(){
+        var $self = $(this);
+        var $removedText = $self.val().replace(/\D/, '');
+        $self.val($removedText);                    
+      });
+
+      //Restrict Paste
+      $input.on("paste",function(e) {
+        e.preventDefault();
+      });
+
+      $submitBtn.on('click', function() { 
+        var TAT = '0'; 
+        var RESULT = 'NA';
+        var COD_AVAILABLE = 'FALSE';
+         var sheetData = undefined;
+        $inputValue = $input.val();
+        $date = $('.product-information strong');
+
+        if($inputValue.length == 6) {
+          //var $response = checkInSheet($inputValue);
+          //var $result = $response;
+
+          
+           var isPincodeCheckerVisible = $('.check-availability');
+      if(isPincodeCheckerVisible.length){
+        $.ajax({
+          url: "https://sheets.googleapis.com/v4/spreadsheets/1lnCEetDMgjP1wr0FVsD56Qv2a6VX-PIvEjR2gsNYG8k/values/Sheet1?key=AIzaSyCy_Ls-IEQ6wMXnHzzBnWu6AdqpuVSh0xs",
+          dataType: "json",
+          async:true,
+          success: function(data){
+            sheetData = data.values;
+            $('body').trigger('sheet_ready');   
+           
+            for(var i=0; i<sheetData.length; i++){
+          if(!sheetData[i] || !sheetData[i].length) {
+            continue;
+          }
+          else {
+            var pincodeList = sheetData[i][0];
+            if(pincodeList && pincodeList.indexOf($inputValue) != -1){
+              RESULT = 'SERVICEABLE';
+              COD_AVAILABLE = sheetData[i][1];
+              if(sheetData[i][2] && sheetData[i][2] != '') { 
+                TAT = sheetData[i][2]; 
+              }
+              
+              break;
+            }
+          }
+        }    
+        
+        //return {TAT: TAT, RESULT: RESULT, COD_AVAILABLE: COD_AVAILABLE};
+            
+          var TAT = parseInt(TAT);
+            var RESULT = RESULT;
+          var COD_AVAILABLE = COD_AVAILABLE;
+          
+          console.log({TAT: TAT, RESULT: RESULT, COD_AVAILABLE: COD_AVAILABLE});
+              if(RESULT == 'NA') {
+          	$(".pincode-error").text("Item cannot be delivered to pincode "+ $inputValue).css('display','flex');
+            $(".pincode-infomation").hide();
+          } 
+            else {
+            if(COD_AVAILABLE == 'TRUE') {
+              $(".cod-info").html("COD available");
+            } else {
+              $(".cod-info").html("COD not available");
+            }
+            
+            if(TAT > 0) {
+            var currentDate = new Date();
+              $currentTime = new Date().getHours();
+              $addDays = TAT;
+              
+              $fromDate = addDays(currentDate , $addDays);
+             
+              if ($fromDate.getDay() == 0) { 
+                //$fromDate = $fromDate.next().monday();
+                $toDate = currentDate.addDays($addDays + 2);
+              } else {
+                $toDate = currentDate.addDays($addDays + 1);
+              }           
+
+              $sellFromDate = $fromDate.toString('MMMM dd');
+              var $sellFromDay = $fromDate.toString('dddd');
+              $sellToDate = $toDate.toString('dS MMM');
+              
+              $(".pincode-infomation .day").text(' '+$sellFromDay+' ');
+              $(".pincode-infomation .date").text($sellFromDate); 
+              $(".pincode-infomation .shipping-info:not(.cod-info)").show();
+            } else {
+              $(".pincode-infomation .shipping-info:not(.cod-info)").hide();
+            }
+
+            $(".pincode-error").text("Shipping not available.").hide();
+            $(".pincode-infomation").css('display','block');
+          }  
+            
+          },
+          error: function(XMLHttpRequest, textStatus) {
+            console.log(textStatus);
+          }
+        });
+      }
+          
+          
+          
+          
+
+         
+
+          
+       
+        } else {
+          $(".pincode-error").text("Enter correct Pincode to get Delivery Details.").css('display','flex');
+          $(".pincode-infomation").hide();
+        }
+      }); 
+  
+  
+</script>
+
+<script>
+$(window).scroll(function() {
+   if ($(this).scrollTop() > 500){
+      $('.sticky_btn').addClass("sticky_btn2");
+   } else {
+      $('.sticky_btn').removeClass("sticky_btn2");
+   }
+});
+</script>
