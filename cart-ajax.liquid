@@ -1,0 +1,104 @@
+{% comment %}
+  JS-load cart markup without bloat of a full layout.
+
+  This is used in both the cart drawer and cart page.
+  When a quantity is changed, this file is scraped and the .cart__item-price-col
+    is fully replaced to account for possible cart discounts changing
+
+  The cart-wide discount div also replaces what is originally in the cart
+    as it can change anytime a cart-item changes
+{% endcomment %}
+{% layout none %}
+{%- assign recommendations = '' -%}
+{%- assign productID = '' -%}
+<div class="cart__items"
+  data-count="{{ cart.item_count }}"
+  data-cart-subtotal="{{ cart.total_price | money | strip_html }}">
+  {% for item in cart.items %}
+  {%- render 'cart-item', location: 'ajax', product: item, small: true, removeBtn: false, forloop: forloop -%}
+  {%- if productID != '' -%}
+    {%- assign productID = productID | append: ',' -%}
+  {%- endif -%}
+  {%- assign productID = productID | append: item.product.id  -%}
+  
+  {%- for tag in item.product.tags -%}
+
+  {%- assign split_tag = tag | split: '::' -%}
+  {%- if split_tag[0] == 'InCartRec' -%}
+    {%- if recommendations != '' -%}
+    {%- assign recommendations = recommendations | append: ',' -%}
+    {%- endif -%}
+  {%- assign related_handle = split_tag[1] | handle -%}
+  {%- assign recommendations = recommendations | append: related_handle -%}
+  {%- endif -%}
+  {%- endfor  -%}
+  {% endfor %}
+  
+  {%- assign related_count = 0 -%}
+ 
+  {%- assign productID_split = productID | split: ',' -%}
+  {% assign size= productID_split.size | minus: 1 %}
+  {%- assign recommendations = recommendations | split: ',' -%}
+  
+ {%- capture shopify_bundle_product -%}
+{%- for product_handle in recommendations -%}
+{%- assign related_product = all_products[product_handle].title  -%}
+{%- if related_product != blank -%}
+{%- assign getOutofloop = 0 -%}
+  
+{%- for i in (0..size) -%}
+  
+  {% assign var1 = productID_split[i] | plus: 0 %}
+ 
+ {%- if var1 == all_products[product_handle].id -%}
+
+  {%- assign getOutofloop = 1 -%}
+  {%- break -%}
+   {%- endif -%}
+  {%- endfor -%}
+  
+ {%- if getOutofloop == 1 -%}
+  {%- continue -%}
+  {%- endif -%}
+ {%- assign related_count = related_count | plus: 1 -%}  
+<li class="upsell-list-item" data-product="{{all_products[product_handle].id}}">
+ <div class="upsell-product">
+ <div class="upsell-product--image">
+    <img class=" lazyloaded" src="{{all_products[product_handle].featured_image | img_url: '100x100'}}" />
+    </div> 
+       <div class="upsell-product--info">
+       <h3><a class="mm-text-black" href="{{all_products[product_handle].url}}">{{all_products[product_handle].title}} </a></h3>
+         <input type="hidden" name="mm-variant" value="{{all_products[product_handle].selected_or_first_available_variant.id}}">
+       </div>
+      <div class="mm-button-container"><p><span class="money">{{all_products[product_handle].price | money }}</span></p><button type="button" class="mm-upsell-button btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M11.5743 5.63857C11.8858 5.63857 12.1399 5.74491 12.3366 5.9576C12.5497 6.15392 12.6562 6.40751 12.6562 6.71835C12.6562 7.0292 12.5497 7.29097 12.3366 7.50365C12.1399 7.69997 11.8858 7.79814 11.5743 7.79814H7.73822V11.6019C7.73822 11.9128 7.63166 12.1745 7.41855 12.3872C7.22182 12.5999 6.96772 12.7062 6.65625 12.7062C6.34477 12.7062 6.08248 12.5999 5.86936 12.3872C5.67264 12.1745 5.57428 11.9128 5.57428 11.6019V7.79814H1.73822C1.42674 7.79814 1.16445 7.69997 0.951332 7.50365C0.754611 7.29097 0.65625 7.0292 0.65625 6.71835C0.65625 6.40751 0.754611 6.15392 0.951332 5.9576C1.16445 5.74491 1.42674 5.63857 1.73822 5.63857H5.57428V1.81025C5.57428 1.49941 5.67264 1.24582 5.86936 1.0495C6.08248 0.836811 6.34477 0.730469 6.65625 0.730469C6.96772 0.730469 7.22182 0.836811 7.41855 1.0495C7.63166 1.24582 7.73822 1.49941 7.73822 1.81025V5.63857H11.5743Z" fill="#CA7077"></path></svg></button>
+     </div>
+  </div>
+   </li>
+
+    {%- endif -%}
+
+  {%- endfor -%}
+
+{%- endcapture -%}
+  {%- if related_count >0 -%}
+ <div class="mm_upsell-section" style="display: block;">
+ <h3 class="mm_upsell-title">You may also like.</h3>
+ <ul class="mm-upsell-list" id="cartUpsellHolder">
+  {{shopify_bundle_product}} 
+
+   </ul>      
+  </div>
+  {%- endif -%}
+</div>
+
+<div class="cart__discounts cart__item-sub cart__item-row{% if cart.cart_level_discount_applications == blank %} hide{% endif %}">
+  <div>{{ 'cart.general.discounts' | t }}</div>
+  <div>
+    {% for cart_discount in cart.cart_level_discount_applications %}
+      <div class="cart__discount">
+        {{ cart_discount.title }} (-{{ cart_discount.total_allocated_amount | money }})
+      </div>
+    {% endfor %}
+  </div>
+</div>
